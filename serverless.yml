@@ -8,6 +8,7 @@ plugins:
 provider:
   name: aws
   runtime: nodejs14.x
+  region: us-east-1
 
 custom:
   webpack:
@@ -16,7 +17,7 @@ custom:
 
 functions:
   hello:
-    handler: src/functions/hello.handler
+    handler: src/handlers/hello.handler
     events:
       - http:
           path: /hello
