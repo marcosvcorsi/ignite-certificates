@@ -4,6 +4,7 @@ service:
 plugins:
   - serverless-offline
   - serverless-webpack
+  - serverless-dynamodb-local
 
 provider:
   name: aws
@@ -14,6 +15,14 @@ custom:
   webpack:
     webpackConfig: ./webpack.config.js
     includeModules: true
+  dynamodb:
+    stages:
+      - dev
+      - local
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true  
 
 functions:
   hello:
@@ -24,3 +33,19 @@ functions:
           method: get
           cors: true
 
+resources:
+  Resources:
+    CertificatesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: certificates
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits:  1   
+      
