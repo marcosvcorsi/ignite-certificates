@@ -25,13 +25,21 @@ custom:
       migrate: true  
 
 functions:
-  hello:
+  create-certificate:
     handler: src/handlers/generateCertificate.handler
     events:
       - http:
           path: /certificates
           method: post
           cors: true
+
+  verify-certificate:
+    handler: src/handlers/verifyCertificate.handler
+    events:
+      - http:
+          path: /certificates/{id}
+          method: get
+          cors: true        
 
 resources:
   Resources:

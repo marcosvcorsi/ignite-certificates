@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { document } from "src/utils/dynamoDbConnection"
 import chromium from 'chrome-aws-lambda';
 import { S3 } from 'aws-sdk';
+import { APIGatewayProxyHandler } from 'aws-lambda';
 
 type CreateCertificate = {
   id: string;
@@ -28,7 +29,7 @@ const compile = async (data: Template) => {
   return handlebars.compile(html)(data);
 }
 
-const generateCertificateContent = async (data: CreateCertificate) => {
+const generateCertificateContent = async (data: CreateCertificate): Promise<string> => {
   const medalPath = path.join(process.cwd(), 'src', 'templates', 'selo.png');
   const medal = fs.readFileSync(medalPath, 'base64');
 
@@ -41,7 +42,7 @@ const generateCertificateContent = async (data: CreateCertificate) => {
   return content;
 }
 
-const generateCertificatePdf = async (content: string) => {
+const generateCertificatePdf = async (content: string): Promise<Buffer> => {
   const browser = await chromium.puppeteer.launch({
     headless: true,
     args: chromium.args,
@@ -66,12 +67,24 @@ const generateCertificatePdf = async (content: string) => {
   return pdf;
 }
 
+const checkCertificate = async (id: string): Promise<boolean> => {
+  const result = await document.query({
+    TableName: 'certificates',
+    KeyConditionExpression: "id = :id",
+    ExpressionAttributeValues: {
+      ":id": id
+    }
+  }).promise();
+
+  return result.Items.length > 0;
+}
+
 const saveCertificate = async (item: CreateCertificate) => document.put({
   TableName: 'certificates',
   Item: item,
 }).promise();
 
-const uploadCertificateToS3 = async (key: string, pdf: Buffer) => {
+const uploadCertificateToS3 = async (key: string, pdf: Buffer): Promise<string> => {
   const s3 = new S3();
 
   await s3.putObject({
@@ -80,19 +93,34 @@ const uploadCertificateToS3 = async (key: string, pdf: Buffer) => {
     ACL: 'public-read',
     Body: pdf,
     ContentType: 'application/pdf'
-  }).promise(); 
+  }).promise();
+  
+  return `https://mvc-ignite-certificates.s3.amazonaws.com/${key}.pdf`
 }
 
 
-export const handler = async (event) => {
+export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const { id, name, grade } = JSON.parse(event.body) as CreateCertificate;
 
+    const certificateAlreadyExists = await checkCertificate(id);
+
+    if(certificateAlreadyExists) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          message: 'Certificate already exists',
+        }) 
+      }
+    }
+    
     const certificateData = {
       id,
       name,
       grade
     }
+
+
 
     await saveCertificate(certificateData);
 
@@ -100,12 +128,13 @@ export const handler = async (event) => {
 
     const certificatePdf = await generateCertificatePdf(certificateContent);
 
-    await uploadCertificateToS3(id, certificatePdf);
+    const certificateUrl = await uploadCertificateToS3(id, certificatePdf);
 
     return {
       statusCode: 201,
       body: JSON.stringify({
-        message: 'Certificate was created'
+        message: 'Certificate was created',
+        url: certificateUrl,
       })
     }
  } catch(error) {
