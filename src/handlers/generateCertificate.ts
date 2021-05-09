@@ -5,6 +5,7 @@ import handlebars from 'handlebars';
 import dayjs from 'dayjs';
 import { document } from "src/utils/dynamoDbConnection"
 import chromium from 'chrome-aws-lambda';
+import { S3 } from 'aws-sdk';
 
 type CreateCertificate = {
   id: string;
@@ -70,6 +71,18 @@ const saveCertificate = async (item: CreateCertificate) => document.put({
   Item: item,
 }).promise();
 
+const uploadCertificateToS3 = async (key: string, pdf: Buffer) => {
+  const s3 = new S3();
+
+  await s3.putObject({
+    Bucket: 'mvc-ignite-certificates',
+    Key: `${key}.pdf`,
+    ACL: 'public-read',
+    Body: pdf,
+    ContentType: 'application/pdf'
+  }).promise(); 
+}
+
 
 export const handler = async (event) => {
   try {
@@ -85,7 +98,9 @@ export const handler = async (event) => {
 
     const certificateContent = await generateCertificateContent(certificateData)
 
-    await generateCertificatePdf(certificateContent);
+    const certificatePdf = await generateCertificatePdf(certificateContent);
+
+    await uploadCertificateToS3(id, certificatePdf);
 
     return {
       statusCode: 201,

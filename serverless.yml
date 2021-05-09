@@ -47,5 +47,22 @@ resources:
             KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
-          WriteCapacityUnits:  1   
-      
+          WriteCapacityUnits:  1
+
+    CertificatesBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: mvc-ignite-certificates
+
+    CertificatesBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref CertificatesBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicRead
+              Effect: Allow
+              Principal: '*'
+              Action:
+                - s3:GetObject
+              Resource: arn:aws:s3:::mvc-ignite-certificates/*
