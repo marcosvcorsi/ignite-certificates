@@ -26,11 +26,11 @@ custom:
 
 functions:
   hello:
-    handler: src/handlers/hello.handler
+    handler: src/handlers/generateCertificate.handler
     events:
       - http:
-          path: /hello
-          method: get
+          path: /certificates
+          method: post
           cors: true
 
 resources:

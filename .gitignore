@@ -3,3 +3,7 @@ node_modules
 .serverless
 .webpack
 .dynamodb
+
+.env
+
+*.pdf
