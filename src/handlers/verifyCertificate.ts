@@ -13,7 +13,7 @@ const checkCertificate = async (id: string): Promise<boolean> => {
   return result.Items.length > 0;
 }
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handle: APIGatewayProxyHandler = async (event) => {
   try {
     const { id } = event.pathParameters;
     

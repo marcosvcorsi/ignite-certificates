@@ -99,7 +99,7 @@ const uploadCertificateToS3 = async (key: string, pdf: Buffer): Promise<string> 
 }
 
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handle: APIGatewayProxyHandler = async (event) => {
   try {
     const { id, name, grade } = JSON.parse(event.body) as CreateCertificate;
 

@@ -10,6 +10,15 @@ provider:
   name: aws
   runtime: nodejs14.x
   region: us-east-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource: "*"  
 
 custom:
   webpack:
@@ -26,20 +35,31 @@ custom:
 
 functions:
   create-certificate:
-    handler: src/handlers/generateCertificate.handler
+    handler: src/handlers/generateCertificate.handle
     events:
       - http:
           path: /certificates
           method: post
           cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+          - dynamodb:PutItem
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/certificates"      
 
   verify-certificate:
-    handler: src/handlers/verifyCertificate.handler
+    handler: src/handlers/verifyCertificate.handle
     events:
       - http:
           path: /certificates/{id}
           method: get
-          cors: true        
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/certificates"          
 
 resources:
   Resources:
